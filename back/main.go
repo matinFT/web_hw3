@@ -25,12 +25,12 @@ import (
 
 var jwtKey = []byte("majidT&matinF")
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-var hexRegex = regexp.MustCompile("[0-9a-fA-F]+")
+
+// var hexRegex = regexp.MustCompile("[0-9a-fA-F]+")
 var clientOptions = options.Client().ApplyURI("mongodb://localhost:27017")
 var client, err = mongo.Connect(context.TODO(), clientOptions)
 
 func main() {
-	fmt.Println("hello")
 
 	if err != nil {
 		log.Fatal(err)
@@ -43,9 +43,287 @@ func main() {
 	router.POST("/api/admin/post/crud", create_post)
 	router.PUT("/api/admin/post/crud/:id", update_post)
 	router.DELETE("/api/admin/post/delet/:id", delete_post)
-	router.GET("/api/admin/post/:id", read_post)
+	router.GET("/api/admin/post/crud/*id", read_post)
+	router.GET("/api/admin/user/crud/:id", get_user)
 
 	router.Run(":8080")
+}
+
+func sign_up(c *gin.Context) {
+	if !validate_signin_up_request(c) {
+		return
+	}
+	myform := c.Request.PostForm
+	email := myform["email"][0]
+	password := myform["password"][0]
+
+	collection := client.Database("Web_HW3").Collection("User")
+	filter := bson.M{"email": email}
+	var result User
+	err = collection.FindOne(context.TODO(), filter).Decode(&result)
+	if err == nil {
+		c.JSON(409, gin.H{
+			"message": "email already exist.",
+		})
+		return
+	} else {
+		collection.InsertOne(context.TODO(), User{email, password, time.Now().Format("01-02-2006")})
+		c.JSON(201, gin.H{
+			"massage": "user has been created",
+		})
+	}
+}
+
+func sign_in(c *gin.Context) {
+	if !validate_signin_up_request(c) {
+		return
+	}
+	myform := c.Request.PostForm
+	email := myform["email"][0]
+	password := myform["password"][0]
+
+	collection := client.Database("Web_HW3").Collection("User")
+	filter := bson.M{"email": email}
+	var result User
+	err = collection.FindOne(context.TODO(), filter).Decode(&result)
+	if err != nil || result.Password != password {
+		c.JSON(400, gin.H{
+			"message": "wrong email or password.",
+		})
+		return
+	}
+
+	tokenString, err := make_token(email)
+	if err {
+		fmt.Println("token string error")
+		return
+	}
+
+	c.SetCookie("token", tokenString, 3600, "/", "localhost", false, true)
+	c.JSON(200, gin.H{
+		"message": tokenString,
+	})
+}
+
+// returns 401 if UNAUTHORIZED ( token has been expired or no token )
+func create_post(c *gin.Context) {
+	userEmail, ok := validate_token(c)
+	if !ok {
+		c.JSON(401, gin.H{
+			"message": "permission denied..",
+		})
+		return
+	} else if !validate_post(c) {
+		return
+	}
+	myform := c.Request.PostForm
+	title := myform["title"][0]
+	content := myform["content"][0]
+	collection := client.Database("Web_HW3").Collection("Post")
+	insertResult, _ := collection.InsertOne(context.TODO(), Post{Title: title, Content: content, Created_by: userEmail,
+		Created_at: time.Now().Format("01-02-2006")})
+	c.JSON(200, gin.H{
+		"id": insertResult.InsertedID,
+	})
+
+}
+
+// # last line: c.String(204, "") ??
+func update_post(c *gin.Context) {
+	userEmail, ok := validate_token(c)
+	if !ok {
+		c.JSON(401, gin.H{
+			"message": "permission denied..",
+		})
+		return
+	} else if !validate_post(c) {
+		return
+	}
+	myform := c.Request.PostForm
+	title := myform["title"][0]
+	content := myform["content"][0]
+	postId := c.Param("id")
+	postObjectId, err := primitive.ObjectIDFromHex(postId)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"message": "url id is not valid",
+		})
+		return
+	}
+	collection := client.Database("Web_HW3").Collection("Post")
+	filter := bson.M{"_id": postObjectId}
+	var targetPost Post
+	err = collection.FindOne(context.TODO(), filter).Decode(&targetPost)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"message": "url id is not valid",
+		})
+		return
+	}
+	if targetPost.Created_by != userEmail {
+		c.JSON(401, gin.H{
+			"message": "permission denied.",
+		})
+		return
+	}
+	collection.UpdateOne(context.TODO(), filter,
+		bson.D{
+			{"$set", bson.D{{"title", title}, {"content", content}}},
+		})
+	c.String(204, "")
+}
+
+func delete_post(c *gin.Context) {
+	userEmail, ok := validate_token(c)
+	if !ok {
+		c.JSON(401, gin.H{
+			"message": "you are UNAUTHORIZED.",
+		})
+		return
+	}
+	postId := c.Param("id")
+	postObjectId, err := primitive.ObjectIDFromHex(postId)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"message": "url id is not valid",
+		})
+		return
+	}
+	collection := client.Database("Web_HW3").Collection("Post")
+	filter := bson.M{"_id": postObjectId}
+	var targetPost Post
+	err = collection.FindOne(context.TODO(), filter).Decode(&targetPost)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"message": "url id is not valid",
+		})
+		return
+	}
+	if targetPost.Created_by != userEmail {
+		c.JSON(401, gin.H{
+			"message": "permission denied.",
+		})
+		return
+	}
+	collection.DeleteMany(context.TODO(), filter)
+	c.String(204, "")
+}
+
+func read_post(c *gin.Context) {
+	userEmail, ok := validate_token(c)
+	if !ok {
+		c.JSON(401, gin.H{
+			"message": "permission denied.",
+		})
+		return
+	}
+	postId := c.Param("id")[1:]
+	postsCollection := client.Database("Web_HW3").Collection("Post")
+	if postId == "" {
+		send_user_posts(c, userEmail)
+		return
+	}
+
+	postObjectId, err := primitive.ObjectIDFromHex(postId)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"message": "url id is not valid",
+		})
+		return
+	}
+
+	filter := bson.M{"_id": postObjectId}
+	var targetPost PostWithId
+	err = postsCollection.FindOne(context.TODO(), filter).Decode(&targetPost)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"message": "url id is not valid",
+		})
+		return
+	}
+	c.JSON(200, bson.M{"posts": targetPost})
+
+}
+
+func get_posts(c *gin.Context) {
+	postsCollection := client.Database("Web_HW3").Collection("Post")
+	var result []PostWithId
+	cur, _ := postsCollection.Find(context.TODO(), bson.M{})
+	for cur.Next(context.TODO()) {
+		var elem PostWithId
+		err := cur.Decode(&elem)
+		// fmt.Println(elem)
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, elem)
+	}
+
+	c.JSON(200, bson.M{"posts": result})
+}
+
+func get_user(c *gin.Context) {
+	userEmail, ok := validate_token(c)
+	if !ok {
+		c.JSON(401, gin.H{
+			"message": "permission denied.",
+		})
+		return
+	}
+	userId := c.Param("id")
+	userObjectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"message": "url id is not valid",
+		})
+		return
+	}
+	collection := client.Database("Web_HW3").Collection("User")
+	filter := bson.M{"_id": userObjectId}
+	var targetUser UserWithId
+	err = collection.FindOne(context.TODO(), filter).Decode(&targetUser)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"message": "url id is not valid",
+		})
+		return
+	}
+	fmt.Println(targetUser.Email)
+	fmt.Println(userEmail)
+
+	if targetUser.Email != userEmail {
+		c.JSON(401, gin.H{
+			"message": "permission denied.",
+		})
+		return
+	}
+
+	c.JSON(200, bson.M{"user": targetUser})
+}
+
+func send_user_posts(c *gin.Context, userEmail string) {
+	postsCollection := client.Database("Web_HW3").Collection("Post")
+	var result []PostWithId
+	filter := bson.M{"created_by": userEmail}
+	cur, err := postsCollection.Find(context.TODO(), filter)
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"message": "url id is not valid",
+		})
+		return
+	}
+	for cur.Next(context.TODO()) {
+		var elem PostWithId
+		err := cur.Decode(&elem)
+		// fmt.Println(elem)
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, elem)
+	}
+
+	c.JSON(200, bson.M{"posts": result})
 }
 
 func validate_token(c *gin.Context) (userEmail string, ok bool) {
@@ -166,155 +444,35 @@ func make_token(email string) (string, bool) {
 	return tokenString, false
 }
 
-func sign_up(c *gin.Context) {
-	if !validate_signin_up_request(c) {
-		return
-	}
-	myform := c.Request.PostForm
-	email := myform["email"][0]
-	password := myform["password"][0]
-
-	collection := client.Database("Web_HW3").Collection("User")
-	filter := bson.M{"email": email}
-	var result User
-	err = collection.FindOne(context.TODO(), filter).Decode(&result)
-	if err == nil {
-		c.JSON(409, gin.H{
-			"message": "email already exist.",
-		})
-		return
-	} else {
-		collection.InsertOne(context.TODO(), User{email, password})
-		c.JSON(201, gin.H{
-			"massage": "user has been created",
-		})
-	}
-}
-
-func sign_in(c *gin.Context) {
-	if !validate_signin_up_request(c) {
-		return
-	}
-	myform := c.Request.PostForm
-	email := myform["email"][0]
-	password := myform["password"][0]
-
-	collection := client.Database("Web_HW3").Collection("User")
-	filter := bson.M{"email": email}
-	var result User
-	err = collection.FindOne(context.TODO(), filter).Decode(&result)
-	if err != nil || result.Password != password {
-		c.JSON(400, gin.H{
-			"message": "wrong email or password.",
-		})
-		return
-	}
-
-	tokenString, err := make_token(email)
-	if err {
-		fmt.Println("token string error")
-		return
-	}
-
-	c.SetCookie("token", tokenString, 3600, "/", "localhost", false, true)
-	c.JSON(200, gin.H{
-		"message": tokenString,
-	})
-}
-
-func get_posts(c *gin.Context) {
-
-}
-
-// returns 401 if UNAUTHORIZED ( token has been expired or no token )
-func create_post(c *gin.Context) {
-	userEmail, ok := validate_token(c)
-	if !ok {
-		c.JSON(401, gin.H{
-			"message": "you are UNAUTHORIZED.",
-		})
-		return
-	} else if !validate_post(c) {
-		return
-	}
-	myform := c.Request.PostForm
-	title := myform["title"][0]
-	content := myform["content"][0]
-	collection := client.Database("Web_HW3").Collection("Post")
-	insertResult, _ := collection.InsertOne(context.TODO(), Post{title, content, userEmail})
-	c.JSON(200, gin.H{
-		"id": insertResult.InsertedID,
-	})
-
-}
-
-// # last line: c.String(204, "") ??
-func update_post(c *gin.Context) {
-	userEmail, ok := validate_token(c)
-	if !ok {
-		c.JSON(401, gin.H{
-			"message": "you are UNAUTHORIZED.",
-		})
-		return
-	} else if !validate_post(c) {
-		return
-	}
-	myform := c.Request.PostForm
-	title := myform["title"][0]
-	content := myform["content"][0]
-	postId := c.Param("id")
-	if !hexRegex.MatchString(postId) {
-		fmt.Println("here")
-		c.JSON(400, gin.H{
-			"message": "url id is not valid",
-		})
-		return
-	}
-
-	collection := client.Database("Web_HW3").Collection("Post")
-	postObjectId, _ := primitive.ObjectIDFromHex(postId)
-	filter := bson.M{"_id": postObjectId}
-	var targetPost Post
-	err = collection.FindOne(context.TODO(), filter).Decode(&targetPost)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"message": "url id is not valid",
-		})
-		return
-	}
-	if targetPost.UserEmail != userEmail {
-		c.JSON(401, gin.H{
-			"message": "permission denied.",
-		})
-		return
-	}
-	collection.UpdateOne(context.TODO(), filter,
-		bson.D{
-			{"$set", bson.D{{"title", title}, {"content", content}}},
-		})
-	c.String(204, "")
-}
-
-func delete_post(c *gin.Context) {
-
-}
-
-func read_post(c *gin.Context) {
-
-}
-
-type User struct {
-	Email    string `json:”email,omitempty”`
-	Password string `json:”password,omitempty”`
-}
-
 type Claims struct {
 	Email string `json:"email"`
 	jwt.StandardClaims
 }
 
+type User struct {
+	Email      string `json:"email,omitempty"`
+	Password   string `json:"password,omitempty"`
+	Created_at string `json:"created-at,omitempty"`
+}
+
+type UserWithId struct {
+	Id         string `bson:"_id" json:"id,omitempty"`
+	Email      string `json:"email,omitempty"`
+	Password   string `json:"password,omitempty"`
+	Created_at string `json:"created-at,omitempty"`
+}
+
 type Post struct {
-	Title     string `json:”title,omitempty”`
-	Content   string `json:”content,omitempty”`
-	UserEmail string `json:”userEmail,omitempty”`
+	Title      string `json:"title,omitempty"`
+	Content    string `json:"content,omitempty"`
+	Created_by string `json:"created_by,omitempty"`
+	Created_at string `json:"created-at,omitempty"`
+}
+
+type PostWithId struct {
+	Id         string `bson:"_id" json:"id,omitempty"`
+	Title      string `json:"title,omitempty"`
+	Content    string `json:"content,omitempty"`
+	Created_by string `json:"created_by,omitempty"`
+	Created_at string `json:"created-at,omitempty"`
 }
