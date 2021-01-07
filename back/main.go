@@ -37,20 +37,20 @@ func main() {
 	}
 
 	router := gin.Default()
-	router.POST("/api/signup", sign_up)
-	router.POST("/api/signin", sign_in)
-	router.GET("/api/post/", get_posts)
-	router.POST("/api/admin/post/crud", create_post)
-	router.PUT("/api/admin/post/crud/:id", update_post)
-	router.DELETE("/api/admin/post/delet/:id", delete_post)
-	router.GET("/api/admin/post/crud/*id", read_post)
-	router.GET("/api/admin/user/crud/:id", get_user)
+	router.POST("/api/signup", signUp)
+	router.POST("/api/signin", signIn)
+	router.GET("/api/post/", getPosts)
+	router.POST("/api/admin/post/crud", createPost)
+	router.PUT("/api/admin/post/crud/:id", updatePost)
+	router.DELETE("/api/admin/post/delet/:id", deletePost)
+	router.GET("/api/admin/post/crud/*id", readPost)
+	router.GET("/api/admin/user/crud/:id", getUser)
 
 	router.Run(":8080")
 }
 
-func sign_up(c *gin.Context) {
-	if !validate_signin_up_request(c) {
+func signUp(c *gin.Context) {
+	if !validateSigninSignUpRequest(c) {
 		return
 	}
 	myform := c.Request.PostForm
@@ -74,8 +74,8 @@ func sign_up(c *gin.Context) {
 	}
 }
 
-func sign_in(c *gin.Context) {
-	if !validate_signin_up_request(c) {
+func signIn(c *gin.Context) {
+	if !validateSigninSignUpRequest(c) {
 		return
 	}
 	myform := c.Request.PostForm
@@ -93,7 +93,7 @@ func sign_in(c *gin.Context) {
 		return
 	}
 
-	tokenString, err := make_token(email)
+	tokenString, err := makeToken(email)
 	if err {
 		fmt.Println("token string error")
 		return
@@ -106,14 +106,14 @@ func sign_in(c *gin.Context) {
 }
 
 // returns 401 if UNAUTHORIZED ( token has been expired or no token )
-func create_post(c *gin.Context) {
-	userEmail, ok := validate_token(c)
+func createPost(c *gin.Context) {
+	userEmail, ok := validateToken(c)
 	if !ok {
 		c.JSON(401, gin.H{
 			"message": "permission denied..",
 		})
 		return
-	} else if !validate_post(c) {
+	} else if !validatePost(c) {
 		return
 	}
 	myform := c.Request.PostForm
@@ -129,14 +129,14 @@ func create_post(c *gin.Context) {
 }
 
 // # last line: c.String(204, "") ??
-func update_post(c *gin.Context) {
-	userEmail, ok := validate_token(c)
+func updatePost(c *gin.Context) {
+	userEmail, ok := validateToken(c)
 	if !ok {
 		c.JSON(401, gin.H{
 			"message": "permission denied..",
 		})
 		return
-	} else if !validate_post(c) {
+	} else if !validatePost(c) {
 		return
 	}
 	myform := c.Request.PostForm
@@ -173,8 +173,8 @@ func update_post(c *gin.Context) {
 	c.String(204, "")
 }
 
-func delete_post(c *gin.Context) {
-	userEmail, ok := validate_token(c)
+func deletePost(c *gin.Context) {
+	userEmail, ok := validateToken(c)
 	if !ok {
 		c.JSON(401, gin.H{
 			"message": "you are UNAUTHORIZED.",
@@ -209,8 +209,8 @@ func delete_post(c *gin.Context) {
 	c.String(204, "")
 }
 
-func read_post(c *gin.Context) {
-	userEmail, ok := validate_token(c)
+func readPost(c *gin.Context) {
+	userEmail, ok := validateToken(c)
 	if !ok {
 		c.JSON(401, gin.H{
 			"message": "permission denied.",
@@ -220,7 +220,7 @@ func read_post(c *gin.Context) {
 	postId := c.Param("id")[1:]
 	postsCollection := client.Database("Web_HW3").Collection("Post")
 	if postId == "" {
-		send_user_posts(c, userEmail)
+		sendUserPosts(c, userEmail)
 		return
 	}
 
@@ -245,7 +245,7 @@ func read_post(c *gin.Context) {
 
 }
 
-func get_posts(c *gin.Context) {
+func getPosts(c *gin.Context) {
 	postsCollection := client.Database("Web_HW3").Collection("Post")
 	var result []PostWithId
 	cur, _ := postsCollection.Find(context.TODO(), bson.M{})
@@ -262,8 +262,8 @@ func get_posts(c *gin.Context) {
 	c.JSON(200, bson.M{"posts": result})
 }
 
-func get_user(c *gin.Context) {
-	userEmail, ok := validate_token(c)
+func getUser(c *gin.Context) {
+	userEmail, ok := validateToken(c)
 	if !ok {
 		c.JSON(401, gin.H{
 			"message": "permission denied.",
@@ -301,7 +301,7 @@ func get_user(c *gin.Context) {
 	c.JSON(200, bson.M{"user": targetUser})
 }
 
-func send_user_posts(c *gin.Context, userEmail string) {
+func sendUserPosts(c *gin.Context, userEmail string) {
 	postsCollection := client.Database("Web_HW3").Collection("Post")
 	var result []PostWithId
 	filter := bson.M{"created_by": userEmail}
@@ -326,7 +326,7 @@ func send_user_posts(c *gin.Context, userEmail string) {
 	c.JSON(200, bson.M{"posts": result})
 }
 
-func validate_token(c *gin.Context) (userEmail string, ok bool) {
+func validateToken(c *gin.Context) (userEmail string, ok bool) {
 	tknString, err := c.Cookie("token")
 	if err != nil {
 		return "not_set", false
@@ -343,10 +343,10 @@ func validate_token(c *gin.Context) (userEmail string, ok bool) {
 
 // validates post to have just title and content keys
 // generates the error itself
-func validate_post(c *gin.Context) bool {
+func validatePost(c *gin.Context) bool {
 	c.Request.ParseMultipartForm(1000)
 	form := c.Request.PostForm
-	if !is_form_valid(form, []string{"title", "content"}) {
+	if !isFormValid(form, []string{"title", "content"}) {
 		c.JSON(400, gin.H{
 			"message": "Request Length should be 2",
 		})
@@ -370,7 +370,7 @@ func validate_post(c *gin.Context) bool {
 
 // checks if form has keys matching the keys array.
 // also checks if form length is equal to keys length.
-func is_form_valid(form url.Values, keys []string) bool {
+func isFormValid(form url.Values, keys []string) bool {
 	if len(form) != len(keys) {
 		return false
 	}
@@ -400,10 +400,10 @@ func isEmailValid(e string) bool {
 }
 
 // # length error
-func validate_signin_up_request(c *gin.Context) bool {
+func validateSigninSignUpRequest(c *gin.Context) bool {
 	c.Request.ParseMultipartForm(1000)
 	myform := c.Request.PostForm
-	if !is_form_valid(myform, []string{"email", "password"}) {
+	if !isFormValid(myform, []string{"email", "password"}) {
 		c.JSON(400, gin.H{
 			"message": "Request Length should be 2",
 		})
@@ -425,7 +425,7 @@ func validate_signin_up_request(c *gin.Context) bool {
 	return true
 }
 
-func make_token(email string) (string, bool) {
+func makeToken(email string) (string, bool) {
 	expirationTime := time.Now().Add(60 * time.Minute)
 	// build token
 	claims := &Claims{
