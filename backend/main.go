@@ -43,21 +43,14 @@ func main() {
 	router.Use(cors.Default())
 
 	router.LoadHTMLGlob("frontend/*")
+
 	router.GET("", serveHTML)
-
-	// router.GET("/", func(c *gin.Context) {
-	// c.SetCookie("token", "tokenstring", 3600, "/", "127.0.0.1", true, false)
-	// c.JSON(200, gin.H{
-	// 	"message": "hello world",
-	// })
-	// })
-
 	router.POST("/api/signup", signUp)
 	router.POST("/api/signin", signIn)
 	router.GET("/api/post/", getPosts)
 	router.POST("/api/admin/post/crud", createPost)
 	router.PUT("/api/admin/post/crud/:id", updatePost)
-	router.DELETE("/api/admin/post/delet/:id", deletePost)
+	router.DELETE("/api/admin/post/delete/:id", deletePost)
 	router.GET("/api/admin/post/crud/*id", readPost)
 	router.GET("/api/admin/user/crud/:id", getUser)
 
@@ -70,7 +63,7 @@ func serveHTML(c *gin.Context) {
 		c.HTML(http.StatusOK, "register.html", nil)
 		return
 	}
-	c.HTML(http.StatusOK, "next.html", nil)
+	c.HTML(http.StatusOK, "admin.html", nil)
 }
 
 func signUp(c *gin.Context) {

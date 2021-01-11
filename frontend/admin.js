@@ -93,7 +93,7 @@ function add_new_post() {
     fetch(url + "/api/admin/post/crud", request).then(function (response) {
         stat = response.status
         if (stat == 201) {
-            location.reload()
+            location.replace(url)
         }  else {
             response.json().then(function(myj){console.log(myj)})
         }
@@ -115,7 +115,8 @@ function update_post(){
     fetch(url + "/api/admin/post/crud/" + post_under_edit, request).then(function (response) {
         stat = response.status
         if (stat == 204) {
-            location.reload()
+            location.replace(url)
+
         } else {
             response.json().then(function(myj){console.log(myj)})
         }    
@@ -129,10 +130,10 @@ function delete_post(){
         method: 'DELETE'
     };
     console.log(url + `/api/admin/post/crud/${post_under_delete}`)
-    fetch(url + `/api/admin/post/delet/${post_under_delete}`, request).then(function (response) {
+    fetch(url + `/api/admin/post/delete/${post_under_delete}`, request).then(function (response) {
         stat = response.status
         if (stat == 204) {
-            location.reload()
+            location.replace(url)
         } else {
             response.json().then(function(myj){console.log(myj)})
         }    
@@ -141,6 +142,6 @@ function delete_post(){
     })
 }
 
-function edit_clicked(buttonElem){
-    console.log()
+function log_out(){
+    document.cookie = "token=; expires=Thu, 01 Jan 2022 00:00:00 UTC; path=/;";
 }
