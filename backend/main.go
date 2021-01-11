@@ -45,8 +45,14 @@ func main() {
 	router.LoadHTMLGlob("frontend/*")
 
 	router.GET("", serveHTML)
+	router.POST("/logout", logOut)
 	router.POST("/api/signup", signUp)
 	router.POST("/api/signin", signIn)
+	router.GET("/api/signin", func(c *gin.Context) {
+		c.JSON(405, gin.H{
+			"message": "Only 'Post' Method is Valid",
+		})
+	})
 	router.GET("/api/post/", getPosts)
 	router.POST("/api/admin/post/crud", createPost)
 	router.PUT("/api/admin/post/crud/:id", updatePost)
@@ -55,6 +61,10 @@ func main() {
 	router.GET("/api/admin/user/crud/:id", getUser)
 
 	router.Run(":8080")
+}
+
+func logOut(c *gin.Context) {
+	c.SetCookie("token", "", 0, "/", "localhost", false, false)
 }
 
 func serveHTML(c *gin.Context) {
@@ -95,13 +105,6 @@ func signIn(c *gin.Context) {
 	if !validateSigninSignUpRequest(c) {
 		return
 	}
-	_, ok := validateToken(c)
-	if ok {
-		c.JSON(401, gin.H{
-			"message": "you are ok",
-		})
-		return
-	}
 	myform := c.Request.PostForm
 	email := myform["email"][0]
 	password := myform["password"][0]
@@ -111,7 +114,7 @@ func signIn(c *gin.Context) {
 	var result User
 	err = collection.FindOne(context.TODO(), filter).Decode(&result)
 	if err != nil || result.Password != password {
-		c.JSON(400, gin.H{
+		c.JSON(401, gin.H{
 			"message": "wrong email or password.",
 		})
 		return
@@ -123,7 +126,7 @@ func signIn(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("token", tokenString, 3600, "/", "localhost", false, true)
+	c.SetCookie("token", tokenString, 3600, "/", "localhost", false, false)
 	c.JSON(200, gin.H{
 		"message": tokenString,
 	})
@@ -146,7 +149,7 @@ func createPost(c *gin.Context) {
 	collection := client.Database("Web_HW3").Collection("Post")
 	insertResult, _ := collection.InsertOne(context.TODO(), Post{Title: title, Content: content, Created_by: userEmail,
 		Created_at: time.Now().Format("01-02-2006")})
-	c.JSON(200, gin.H{
+	c.JSON(201, gin.H{
 		"id": insertResult.InsertedID,
 	})
 
@@ -157,8 +160,6 @@ func updatePost(c *gin.Context) {
 	fmt.Println("here")
 	userEmail, ok := validateToken(c)
 	if !ok {
-		fmt.Println("here")
-
 		c.JSON(401, gin.H{
 			"message": "permission denied.",
 		})
@@ -279,7 +280,6 @@ func getPosts(c *gin.Context) {
 	for cur.Next(context.TODO()) {
 		var elem PostWithId
 		err := cur.Decode(&elem)
-		// fmt.Println(elem)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -315,9 +315,6 @@ func getUser(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println(targetUser.Email)
-	fmt.Println(userEmail)
-
 	if targetUser.Email != userEmail {
 		c.JSON(401, gin.H{
 			"message": "permission denied.",

@@ -376,7 +376,7 @@
 
 		function add_new_post() {
 			new_post_form = document.forms["add_new_post_form"];
-			data = `title=${new_post_form["title"].value}&password=${new_post_form["content"].value}`
+			data = `title=${new_post_form["title"].value}&content=${new_post_form["content"].value}`
 			var request = {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
@@ -385,7 +385,7 @@
 			fetch(url + "/api/admin/post/crud", request).then(function (response) {
 				stat = response.status
 				if (stat == 201) {
-					location.reload()
+					location.replace(url)
 				} else {
 					response.json().then(function (myj) { console.log(myj) })
 				}
@@ -397,7 +397,7 @@
 
 		function update_post() {
 			update_post_form = document.forms["update_post_form"];
-			data = `title=${update_post_form["title"].value}&password=${update_post_form["content"].value}`
+			data = `title=${update_post_form["title"].value}&content=${update_post_form["content"].value}`
 			var request = {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
@@ -407,7 +407,7 @@
 			fetch(url + "/api/admin/post/crud/" + post_under_edit, request).then(function (response) {
 				stat = response.status
 				if (stat == 204) {
-					location.reload()
+					location.replace(url)
 				} else {
 					response.json().then(function (myj) { console.log(myj) })
 				}
@@ -421,10 +421,10 @@
 				method: 'DELETE'
 			};
 			console.log(url + `/api/admin/post/crud/${post_under_delete}`)
-			fetch(url + `/api/admin/post/delet/${post_under_delete}`, request).then(function (response) {
+			fetch(url + `/api/admin/post/delete/${post_under_delete}`, request).then(function (response) {
 				stat = response.status
 				if (stat == 204) {
-					location.reload()
+					location.replace(url)
 				} else {
 					response.json().then(function (myj) { console.log(myj) })
 				}
@@ -434,10 +434,15 @@
 		}
 
 		function log_out() {
-			document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-			location.replace(url)
+			var request = {
+				method: 'POST'
+			};
+			fetch(url + "/logout", request).then(function (response) {
+				location.replace(url)
+			}).catch(function (error) {
+				console.log("Error: " + error);
+			})
 		}
-
 	</script>
 </head>
 

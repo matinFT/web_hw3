@@ -311,8 +311,7 @@
             };
             fetch(url + "/api/signin", request).then(function (response) {
                 if (response.status == 200) {
-                    // location.replace(url)
-                    console.log(response.headers)
+                    location.replace(url)
                 } else {
                     response.text().then(function (res) {
                         console.log(JSON.parse(res))
