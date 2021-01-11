@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="assets/blue_favicon/android-chrome-192x192.png" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link href='http://fonts.googleapis.com/css?family=Judson:400,400italic,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="register.css">
+    <script src="register.js"></script>
+    <script>
+        var domain = 'https://localhost:8080';
+        fetch(domain + '/api/admin/post/crud/*id')
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (myJson) {
+
+            })
+            .catch(function (error) {
+                console.log("Error: " + error);
+                myJson = {
+                    "posts": [
+                        {
+                            "id": 1,
+                            "title": "Post Title",
+                            "content": "Post Content",
+                            "created_by": 1,
+                            "created_at": "2020/12/19"
+                        },
+                        {
+                            "id": 2,
+                            "title": "Post2 Title",
+                            "content": "Post2 Content",
+                            "created_by": 2,
+                            "created_at": "2020/12/19"
+                        }
+                    ]
+                }
+                myJson = myJson['posts'];
+                for (const post of myJson) {
+                    var card_div = document.createElement('div');
+                    card_div.className = 'card';
+                    card_div.style.margin = '15px';
+                    var card_body_div = document.createElement('div');
+                    card_body_div.className = 'card-body';
+                    var card_title = document.createElement('h4');
+                    card_title.className = 'card-title';
+                    card_title.innerHTML = 'عنوان: ' + post['title'];
+                    var card_text1 = document.createElement('p');
+                    card_text1.className = 'card-text';
+                    card_text1.innerHTML = 'شناسه: ' + post['id'];
+                    var card_text2 = document.createElement('p');
+                    card_text2.className = 'card-text';
+                    card_text2.innerHTML = 'محتوا: ' + post['content'];
+                    var card_text3 = document.createElement('p');
+                    card_text3.className = 'card-text';
+                    card_text3.innerHTML = 'شناسه نویسنده: ' + post['created_by']
+                    var card_text4 = document.createElement('p');
+                    card_text4.className = 'card-text';
+                    card_text4.innerHTML = 'تاریخ ایجاد شدن: ' + post['created_at'];
+                    card_body_div.appendChild(card_title);
+                    card_body_div.appendChild(card_text1);
+                    card_body_div.appendChild(card_text2);
+                    card_body_div.appendChild(card_text3);
+                    card_body_div.appendChild(card_text4);
+                    card_div.appendChild(card_body_div);
+                    document.getElementsByClassName('all-posts')[0].appendChild(card_div);
+                }
+            });
+
+        // document.onload = console.log(document.getElementsByClassName('all-posts'));
+
+    </script>
+    <title>Register</title>
+</head>
+
+<body>
+
+    <main>
+
+        <div id="header" class="d-flex justify-content-between align-items-center">
+            <a href="home.html" id="home-link">بازگشت به خانه </a>
+            <img class="navbar-brand" id="logoimg" src="assets/blue_logo_200x200.png" />
+        </div>
+
+
+        <div id="main-content"">
+
+            <div class="all-posts"></div>
+
+            <div class="form-section" class="d-flex">
+                <div id="form-section-header" class="row">
+                    <button type="button" class="col-6 form-btn" id="enter-button" onclick="enter()">ورود</button>
+                    <button type="button" class="col-6 form-btn form-btn-active" id="register-button"
+                        onclick="register()">ثبت نام</button>
+                </div>
+
+                <div id="form-section-form" class="row justify-content-center align-items-center">
+                    <form id="register-form" dir="rtl" action="/api/signup" method="POST">
+                        <div class="form-group">
+                            <input type="email" class="form-control" name="email" placeholder="ایمیل" dir="rtl">
+                        </div>
+
+                        <div class="form-group">
+                            <input type="password" class="form-control" name="password" placeholder="رمز عبور" dir="rtl">
+                        </div>
+
+                        <div class="form-group">
+                            <input type="password" class="form-control" name="RepeatePassword" placeholder="تکرار رمز عبور">
+                        </div>
+
+                        <div class="form-check" style="float: right;">
+                            <input type="checkbox" name="terms-checkbox">
+                            <label for="terms-checkbox">قوانین و شرایط را میپذیرم</label>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" id="submit-button" onclick="submit_register();">
+                            ثبت نام
+                        </button>
+
+                        <div id="register-error-message" class="error-message">
+                            <span id="register-error-text"></span>
+                            <button type="button" class="exit-error-button"
+                                onclick="remove_error('register-error-message');">x</button>
+                        </div>
+
+                    </form>
+
+                    <form id="enter-form" dir="rtl" action="/api/signin" method="POST">
+                        <div class="form-group">
+                            <input type="email" class="form-control" name="Email" placeholder="ایمیل" dir="rtl" required>
+                        </div>
+
+                        <div class="form-group">
+                            <input type="password" class="form-control" name="Password" placeholder="رمز عبور" dir="rtl"
+                                required>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" id="submit-button" onclick="submit_enter();">
+                            ورود
+                        </button>
+
+                        <div id="enter-error-message" class="error-message">
+                            <span id="enter-error-text"></span>
+                            <button type="button" class="exit-error-button"
+                                onclick="remove_error('enter-error-message');">x</button>
+                        </div>
+
+
+                    </form>
+
+
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+</body>
+
+</html>
