@@ -42,7 +42,7 @@ func main() {
 	router.GET("/api/post/", getPosts)
 	router.POST("/api/admin/post/crud", createPost)
 	router.PUT("/api/admin/post/crud/:id", updatePost)
-	router.DELETE("/api/admin/post/delet/:id", deletePost)
+	router.DELETE("/api/admin/post/delete/:id", deletePost)
 	router.GET("/api/admin/post/crud/*id", readPost)
 	router.GET("/api/admin/user/crud/:id", getUser)
 
