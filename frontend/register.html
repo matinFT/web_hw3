@@ -4,74 +4,384 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="assets/blue_favicon/android-chrome-192x192.png" />
+    <!-- <link rel="icon" type="image/png" href="assets/blue_favicon/android-chrome-192x192.png" /> -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link href='http://fonts.googleapis.com/css?family=Judson:400,400italic,700' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="register.css">
-    <script src="register.js"></script>
+    <!-- <link rel="stylesheet" type="text/css" href="register.css"> -->
+    <!-- <script src="register.js"></script> -->
+    <style>
+        html {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+        }
+
+        body {
+            align-content: center;
+            background-color: #E8EFF7;
+            min-height: 100%;
+            width: 100%;
+            margin: 0;
+            overflow: auto;
+            font-family: "Sahel", sans-serif;
+        }
+
+        * {
+            color: #186AA5;
+            font-family: "Shabnam";
+        }
+
+        /* main */
+        #header {
+            width: 100%;
+        }
+
+        #home-link:hover {
+            color: black;
+            text-decoration: none;
+        }
+
+        #home-link::before {
+            content: "< ";
+        }
+
+        #logoimg {
+            height: 100px;
+            width: 100px;
+        }
+
+        main {
+            padding: 10px;
+            display: grid;
+            max-width: 1000px;
+            width: 100%;
+            margin: auto;
+            grid-template-columns: 1fr;
+            grid-template-rows: 100px 500px;
+        }
+
+
+
+        #main-content {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            grid-template-columns: minmax(250px, 650px) 350px;
+            grid-template-rows: 500px;
+            grid-auto-flow: column;
+        }
+
+        .picture-container {
+            position: relative;
+        }
+
+        #picture-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            /* color: red; */
+        }
+
+        #picture {
+            width: 100%;
+            height: 100%;
+        }
+
+        .image {
+            height: 100%;
+            width: 100%;
+        }
+
+        #form-section-header {
+            width: 100%;
+            height: 50px;
+            margin: 0px;
+        }
+
+
+
+        @media (max-width:600px) {
+            .picture-container {
+                display: none;
+            }
+
+            #main-content {
+                grid-template-columns: 1fr;
+            }
+
+            main {
+                grid-template-columns: 350px;
+                justify-content: center;
+            }
+        }
+
+        #form-section-form {
+            margin: 0;
+            background-color: white;
+            padding: 5px 0px;
+            height: calc(100% - 50px);
+        }
+
+
+        .form-control {
+            width: 300px;
+        }
+
+        .form-btn {
+            border: none;
+            background-color: initial;
+            cursor: pointer;
+        }
+
+        button:focus {
+            outline: none;
+        }
+
+        .form-btn:hover {
+            background-color: #aedbfb;
+        }
+
+        .form-btn-active {
+            background-color: white;
+        }
+
+
+
+        #submit-button {
+            height: 50px;
+            width: 100%;
+        }
+
+        #enter-form {
+            display: none;
+        }
+
+        .error-message {
+            display: block;
+            visibility: hidden;
+            width: 300px;
+            overflow: hidden;
+            opacity: 0;
+            text-align: right;
+            padding: 6px;
+            margin-top: 10px;
+            border-right: 15px solid #D1E4F3;
+            background-color: #E8EFF7;
+            height: 40px;
+            transition: visibility 1s, opacity 1s;
+        }
+
+
+
+        .exit-error-button {
+            border-radius: 100%;
+            border: none;
+            float: left;
+            color: white;
+            background-color: #73A1C2;
+        }
+
+        .exit-error-button:hover {
+            background-color: #186AA5;
+        }
+    </style>
     <script>
-        var domain = 'https://localhost:8080';
-        fetch(domain + '/api/admin/post/crud/*id')
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (myJson) {
+        url = "http://localhost:8080"
 
+
+
+        get_all_posts()
+
+
+
+        function get_all_posts() {
+            fetch(url + "/api/post/").then(function (response) {
+                response.text().then(function (res) {
+                    posts = JSON.parse(res)["posts"]
+                    replace_posts(posts)
+                })
             })
-            .catch(function (error) {
+                .catch(function (error) {
+                    console.log("Error: " + error);
+                })
+        }
+
+        function replace_posts(posts) {
+            for (const post of posts) {
+                var card_div = document.createElement('div');
+                card_div.className = 'card';
+                card_div.style.margin = '15px';
+                var card_body_div = document.createElement('div');
+                card_body_div.className = 'card-body';
+                var card_title = document.createElement('h4');
+                card_title.className = 'card-title';
+                card_title.innerHTML = 'عنوان: ' + post['title'];
+                var card_text1 = document.createElement('p');
+                card_text1.className = 'card-text';
+                card_text1.innerHTML = 'شناسه: ' + post['id'];
+                var card_text2 = document.createElement('p');
+                card_text2.className = 'card-text';
+                card_text2.innerHTML = 'محتوا: ' + post['content'];
+                var card_text3 = document.createElement('p');
+                card_text3.className = 'card-text';
+                card_text3.innerHTML = 'شناسه نویسنده: ' + post['created_by']
+                var card_text4 = document.createElement('p');
+                card_text4.className = 'card-text';
+                card_text4.innerHTML = 'تاریخ ایجاد شدن: ' + post['created_at'];
+                card_body_div.appendChild(card_title);
+                card_body_div.appendChild(card_text1);
+                card_body_div.appendChild(card_text2);
+                card_body_div.appendChild(card_text3);
+                card_body_div.appendChild(card_text4);
+                card_div.appendChild(card_body_div);
+                document.getElementsByClassName('all-posts')[0].appendChild(card_div);
+            }
+        }
+
+        function register() {
+            elem = document.getElementById("register-button");
+            if (!elem.classList.contains("form-btn-active")) {
+                elem.classList.toggle("form-btn-active");
+                document.getElementById("enter-button").classList.toggle("form-btn-active");
+                document.getElementById("register-form").style.display = "block";
+                document.getElementById("enter-form").style.display = "none";
+            }
+
+        }
+
+        function enter() {
+            elem = document.getElementById("enter-button");
+            if (!elem.classList.contains("form-btn-active")) {
+                elem.classList.toggle("form-btn-active");
+                document.getElementById("register-button").classList.toggle("form-btn-active");
+                document.getElementById("register-form").style.display = "none";
+                document.getElementById("enter-form").style.display = "block";
+            }
+
+        }
+
+        function submit_register() {
+            let register_form = document.forms["register-form"];
+            if (!validate_register) {
+                return
+            }
+            remove_error("register-error-message")
+
+            data = `email=${register_form["email"].value}&password=${register_form["password"].value}`
+            var request = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: data
+            };
+            fetch(url + "/api/signup", request).then(function (response) {
+                stat = response.status
+                if (stat == 201) {
+                    location.replace(url)
+                } else {
+                    response.text().then(function (res) {
+                        console.log(JSON.parse(res))
+                    })
+                }
+            }).catch(function (error) {
                 console.log("Error: " + error);
-                myJson = {
-                    "posts": [
-                        {
-                            "id": 1,
-                            "title": "Post Title",
-                            "content": "Post Content",
-                            "created_by": 1,
-                            "created_at": "2020/12/19"
-                        },
-                        {
-                            "id": 2,
-                            "title": "Post2 Title",
-                            "content": "Post2 Content",
-                            "created_by": 2,
-                            "created_at": "2020/12/19"
-                        }
-                    ]
-                }
-                myJson = myJson['posts'];
-                for (const post of myJson) {
-                    var card_div = document.createElement('div');
-                    card_div.className = 'card';
-                    card_div.style.margin = '15px';
-                    var card_body_div = document.createElement('div');
-                    card_body_div.className = 'card-body';
-                    var card_title = document.createElement('h4');
-                    card_title.className = 'card-title';
-                    card_title.innerHTML = 'عنوان: ' + post['title'];
-                    var card_text1 = document.createElement('p');
-                    card_text1.className = 'card-text';
-                    card_text1.innerHTML = 'شناسه: ' + post['id'];
-                    var card_text2 = document.createElement('p');
-                    card_text2.className = 'card-text';
-                    card_text2.innerHTML = 'محتوا: ' + post['content'];
-                    var card_text3 = document.createElement('p');
-                    card_text3.className = 'card-text';
-                    card_text3.innerHTML = 'شناسه نویسنده: ' + post['created_by']
-                    var card_text4 = document.createElement('p');
-                    card_text4.className = 'card-text';
-                    card_text4.innerHTML = 'تاریخ ایجاد شدن: ' + post['created_at'];
-                    card_body_div.appendChild(card_title);
-                    card_body_div.appendChild(card_text1);
-                    card_body_div.appendChild(card_text2);
-                    card_body_div.appendChild(card_text3);
-                    card_body_div.appendChild(card_text4);
-                    card_div.appendChild(card_body_div);
-                    document.getElementsByClassName('all-posts')[0].appendChild(card_div);
-                }
-            });
+            })
 
-        // document.onload = console.log(document.getElementsByClassName('all-posts'));
+
+        }
+
+        function submit_enter() {
+            if (!validate_enter) {
+                return
+            }
+            remove_error("enter-error-message")
+            var d = new Date();
+            d.setTime(d.getTime() + (2 * 24 * 60 * 60 * 1000));
+            var expires = "expires=" + d.toUTCString();
+            document.cookie = "mycookie" + "=" + "cvalue" + "," + expires + ",path=/" + ", domain=127.0.0.1";
+
+            let enter_form = document.forms["enter-form"];
+            data = `email=${enter_form["email"].value}&password=${enter_form["password"].value}`
+            var request = {
+                credentials: "same-origin",
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: data
+            };
+            fetch(url + "/api/signin", request).then(function (response) {
+                if (response.status == 200) {
+                    // location.replace(url)
+                    console.log(response.headers)
+                } else {
+                    response.text().then(function (res) {
+                        console.log(JSON.parse(res))
+                    })
+                }
+            }).catch(function (error) {
+                console.log("Error: " + error);
+            })
+
+        }
+
+        function remove_error(form_id) {
+            document.getElementById(form_id).style.opacity = 0
+            document.getElementById(form_id).style.visibility = "hidden"
+        }
+
+        function ValidateEmail(mail) {
+            if (/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(mail)) {
+                return (true)
+            }
+            return (false)
+        }
+
+        function validate_register() {
+            let register_form = document.forms["register-form"];
+            if (!ValidateEmail(register_form["Email"].value)) {
+                document.getElementById("register-error-text").innerText = "ایمیل نامعتبر"
+                register_form["Email"].focus();
+            }
+            else if (register_form["Password"].value == '') {
+                document.getElementById("register-error-text").innerText = "لطفا رمز عبور را وارد کنید"
+                register_form["Password"].focus();
+            }
+            else if (register_form["Password"].value != register_form["RepeatePassword"].value) {
+                document.getElementById("register-error-text").innerText = "عدم یکسان بودن رمزهای عبور"
+                register_form["RepeatePassword"].focus();
+            }
+            else if (!register_form["terms-checkbox"].checked) {
+                document.getElementById("register-error-text").innerText = "عدم قبول قوانین و شرایط"
+                register_form["terms-checkbox"].focus();
+            }
+            else {
+                return true
+            }
+            let error_element = document.getElementById("register-error-message");
+            error_element.style.opacity = 1;
+            error_element.style.visibility = "visible";
+            return false
+        }
+
+        function validate_enter() {
+            let enter_form = document.forms["enter-form"];
+            if (!ValidateEmail(enter_form["email"].value)) {
+                document.getElementById("enter-error-text").innerText = "ایمیل نامعتبر"
+                enter_form["email"].focus();
+            }
+            else if (enter_form["password"].value == "") {
+                document.getElementById("enter-error-text").innerText = "لطفا رمز عبور را وارد کنید"
+                enter_form["password"].focus();
+            }
+            else {
+                return true
+            }
+            let error_element = document.getElementById("enter-error-message");
+            error_element.style.opacity = 1;
+            error_element.style.visibility = "visible";
+            return false
+        }
+
 
     </script>
     <title>Register</title>
@@ -81,13 +391,13 @@
 
     <main>
 
-        <div id="header" class="d-flex justify-content-between align-items-center">
+        <!-- <div id="header" class="d-flex justify-content-between align-items-center">
             <a href="home.html" id="home-link">بازگشت به خانه </a>
             <img class="navbar-brand" id="logoimg" src="assets/blue_logo_200x200.png" />
-        </div>
+        </div> -->
 
 
-        <div id="main-content"">
+        <div id="main-content">
 
             <div class="all-posts"></div>
 
@@ -105,11 +415,13 @@
                         </div>
 
                         <div class="form-group">
-                            <input type="password" class="form-control" name="password" placeholder="رمز عبور" dir="rtl">
+                            <input type="password" class="form-control" name="password" placeholder="رمز عبور"
+                                dir="rtl">
                         </div>
 
                         <div class="form-group">
-                            <input type="password" class="form-control" name="RepeatePassword" placeholder="تکرار رمز عبور">
+                            <input type="password" class="form-control" name="RepeatePassword"
+                                placeholder="تکرار رمز عبور">
                         </div>
 
                         <div class="form-check" style="float: right;">
@@ -131,11 +443,12 @@
 
                     <form id="enter-form" dir="rtl" action="/api/signin" method="POST">
                         <div class="form-group">
-                            <input type="email" class="form-control" name="Email" placeholder="ایمیل" dir="rtl" required>
+                            <input type="email" class="form-control" name="email" placeholder="ایمیل" dir="rtl"
+                                required>
                         </div>
 
                         <div class="form-group">
-                            <input type="password" class="form-control" name="Password" placeholder="رمز عبور" dir="rtl"
+                            <input type="password" class="form-control" name="password" placeholder="رمز عبور" dir="rtl"
                                 required>
                         </div>
 

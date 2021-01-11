@@ -7,12 +7,16 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"net/url"
+
+	// "path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-contrib/cors"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -26,7 +30,6 @@ import (
 var jwtKey = []byte("majidT&matinF")
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
-// var hexRegex = regexp.MustCompile("[0-9a-fA-F]+")
 var clientOptions = options.Client().ApplyURI("mongodb://localhost:27017")
 var client, err = mongo.Connect(context.TODO(), clientOptions)
 
@@ -37,6 +40,18 @@ func main() {
 	}
 
 	router := gin.Default()
+	router.Use(cors.Default())
+
+	router.LoadHTMLGlob("frontend/*")
+	router.GET("", serveHTML)
+
+	// router.GET("/", func(c *gin.Context) {
+	// c.SetCookie("token", "tokenstring", 3600, "/", "127.0.0.1", true, false)
+	// c.JSON(200, gin.H{
+	// 	"message": "hello world",
+	// })
+	// })
+
 	router.POST("/api/signup", signUp)
 	router.POST("/api/signin", signIn)
 	router.GET("/api/post/", getPosts)
@@ -47,6 +62,15 @@ func main() {
 	router.GET("/api/admin/user/crud/:id", getUser)
 
 	router.Run(":8080")
+}
+
+func serveHTML(c *gin.Context) {
+	_, ok := validateToken(c)
+	if !ok {
+		c.HTML(http.StatusOK, "register.html", nil)
+		return
+	}
+	c.HTML(http.StatusOK, "next.html", nil)
 }
 
 func signUp(c *gin.Context) {
@@ -76,6 +100,13 @@ func signUp(c *gin.Context) {
 
 func signIn(c *gin.Context) {
 	if !validateSigninSignUpRequest(c) {
+		return
+	}
+	_, ok := validateToken(c)
+	if ok {
+		c.JSON(401, gin.H{
+			"message": "you are ok",
+		})
 		return
 	}
 	myform := c.Request.PostForm
@@ -110,7 +141,7 @@ func createPost(c *gin.Context) {
 	userEmail, ok := validateToken(c)
 	if !ok {
 		c.JSON(401, gin.H{
-			"message": "permission denied..",
+			"message": "permission denied.",
 		})
 		return
 	} else if !validatePost(c) {
@@ -130,10 +161,13 @@ func createPost(c *gin.Context) {
 
 // # last line: c.String(204, "") ??
 func updatePost(c *gin.Context) {
+	fmt.Println("here")
 	userEmail, ok := validateToken(c)
 	if !ok {
+		fmt.Println("here")
+
 		c.JSON(401, gin.H{
-			"message": "permission denied..",
+			"message": "permission denied.",
 		})
 		return
 	} else if !validatePost(c) {
@@ -177,7 +211,7 @@ func deletePost(c *gin.Context) {
 	userEmail, ok := validateToken(c)
 	if !ok {
 		c.JSON(401, gin.H{
-			"message": "you are UNAUTHORIZED.",
+			"message": "permission denied.",
 		})
 		return
 	}
@@ -452,21 +486,21 @@ type Claims struct {
 type User struct {
 	Email      string `json:"email,omitempty"`
 	Password   string `json:"password,omitempty"`
-	Created_at string `json:"created-at,omitempty"`
+	Created_at string `json:"created_at,omitempty"`
 }
 
 type UserWithId struct {
 	Id         string `bson:"_id" json:"id,omitempty"`
 	Email      string `json:"email,omitempty"`
 	Password   string `json:"password,omitempty"`
-	Created_at string `json:"created-at,omitempty"`
+	Created_at string `json:"created_at,omitempty"`
 }
 
 type Post struct {
 	Title      string `json:"title,omitempty"`
 	Content    string `json:"content,omitempty"`
 	Created_by string `json:"created_by,omitempty"`
-	Created_at string `json:"created-at,omitempty"`
+	Created_at string `json:"created_at,omitempty"`
 }
 
 type PostWithId struct {
@@ -474,5 +508,5 @@ type PostWithId struct {
 	Title      string `json:"title,omitempty"`
 	Content    string `json:"content,omitempty"`
 	Created_by string `json:"created_by,omitempty"`
-	Created_at string `json:"created-at,omitempty"`
+	Created_at string `json:"created_at,omitempty"`
 }
