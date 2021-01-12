@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-contrib/cors"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -39,11 +38,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	router := handler()
+	// router.Use(cors.Default())
+	// router.LoadHTMLGlob("frontend/*")
+
+	router.Run(":8080")
+}
+func handler() *gin.Engine {
 	router := gin.Default()
-	router.Use(cors.Default())
-
-	router.LoadHTMLGlob("frontend/*")
-
 	router.GET("", serveHTML)
 	router.POST("/logout", logOut)
 	router.POST("/api/signup", signUp)
@@ -59,8 +61,7 @@ func main() {
 	router.DELETE("/api/admin/post/delete/:id", deletePost)
 	router.GET("/api/admin/post/crud/*id", readPost)
 	router.GET("/api/admin/user/crud/:id", getUser)
-
-	router.Run(":8080")
+	return router
 }
 
 func logOut(c *gin.Context) {
