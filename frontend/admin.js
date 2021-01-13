@@ -27,10 +27,10 @@ url = "http://localhost:8080"
 		});
 
 
-		get_all_posts()
+		get_user_posts()
 
-		function get_all_posts() {
-			fetch(url + "/api/post/").then(function (response) {
+		function get_user_posts() {
+			fetch(url + "/api/admin/post/crud/").then(function (response) {
 				response.text().then(function (res) {
 					posts = JSON.parse(res)["posts"]
 					replace_posts(posts)
